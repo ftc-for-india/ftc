@@ -2,7 +2,17 @@ import React, { useState } from "react";
 import axios from "axios";
 import { API_URL } from "../config/api";
 import { useNavigate } from "react-router-dom";
-import { TextField, Button, Container, Typography, Box, IconButton, InputAdornment, Snackbar, Alert } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Container,
+  Typography,
+  Box,
+  IconButton,
+  InputAdornment,
+  Snackbar,
+  Alert
+} from "@mui/material";
 import { Visibility, VisibilityOff, Google } from "@mui/icons-material";
 
 const LoginPage = () => {
@@ -13,19 +23,28 @@ const LoginPage = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    try {
-      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
-      localStorage.setItem("token", response.data.token);
-      setOpenSnackbar(true);
-      setTimeout(() => navigate("/dashboard"), 2000);
-    } catch (error) {
-      setError("Login Failed: Invalid credentials");
+ const handleLogin = async () => {
+  try {
+    const res = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, {
+      email,
+      password,
+    });
+
+    if (res.data.token) {
+      localStorage.setItem('token', res.data.token);
+      navigate('/dashboard'); // or wherever you want to redirect
+    } else {
+      alert("Login failed");
     }
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Login error: " + err.response?.data?.message || err.message);
+  }
+};
+
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_URL}/auth/google`; // Redirect to backend OAuth
+    window.location.href = `${API_URL}/auth/google`; // Connect with backend route
   };
 
   return (
@@ -34,12 +53,12 @@ const LoginPage = () => {
         <Typography variant="h4" gutterBottom>Login</Typography>
         {error && <Alert severity="error">{error}</Alert>}
         <TextField fullWidth label="Email" margin="normal" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <TextField 
-          fullWidth 
-          type={showPassword ? "text" : "password"} 
-          label="Password" 
-          margin="normal" 
-          value={password} 
+        <TextField
+          fullWidth
+          type={showPassword ? "text" : "password"}
+          label="Password"
+          margin="normal"
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
           InputProps={{
             endAdornment: (
@@ -48,11 +67,15 @@ const LoginPage = () => {
                   {showPassword ? <VisibilityOff /> : <Visibility />}
                 </IconButton>
               </InputAdornment>
-            ),
+            )
           }}
         />
-        <Button variant="contained" color="primary" fullWidth onClick={handleLogin} sx={{ mt: 2 }}>Login</Button>
-        <Button variant="outlined" color="secondary" fullWidth startIcon={<Google />} onClick={handleGoogleLogin} sx={{ mt: 2 }}>Login with Google</Button>
+        <Button variant="contained" color="primary" fullWidth onClick={handleLogin} sx={{ mt: 2 }}>
+          Login
+        </Button>
+        <Button variant="outlined" color="secondary" fullWidth startIcon={<Google />} onClick={handleGoogleLogin} sx={{ mt: 2 }}>
+          Login with Google
+        </Button>
         <Typography variant="body2" sx={{ mt: 2 }}>Don't have an account? <Button onClick={() => navigate("/register")} sx={{ textTransform: "none" }}>Register</Button></Typography>
         <Typography variant="body2" sx={{ mt: 1 }}><Button onClick={() => navigate("/forgot-password")} sx={{ textTransform: "none" }}>Forgot Password?</Button></Typography>
       </Box>

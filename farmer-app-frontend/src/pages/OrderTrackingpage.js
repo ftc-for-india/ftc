@@ -1,19 +1,38 @@
-import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import React, { useEffect, useState } from "react";
+import { Container, Typography, CircularProgress, Box } from "@mui/material";
+import axios from "axios";
 import { API_URL } from "../config/api";
 
-const socket = io(API_URL);
-
 const OrderTrackingPage = () => {
-  const [status, setStatus] = useState("Processing");
+  const [orderStatus, setOrderStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    socket.on("orderUpdated", (newStatus) => {
-      setStatus(newStatus);
-    });
+    axios.get(`${API_URL}/orders/latest`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+    })
+      .then(res => {
+        setOrderStatus(res.data.status);
+        setLoading(false);
+      })
+      .catch(() => {
+        setOrderStatus("Unable to fetch order status.");
+        setLoading(false);
+      });
   }, []);
 
-  return <h2>Order Status: {status}</h2>;
+  return (
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 5, textAlign: "center" }}>
+        <Typography variant="h4" gutterBottom>Order Tracking</Typography>
+        {loading ? (
+          <CircularProgress />
+        ) : (
+          <Typography variant="h6">Current Order Status: {orderStatus}</Typography>
+        )}
+      </Box>
+    </Container>
+  );
 };
 
 export default OrderTrackingPage;

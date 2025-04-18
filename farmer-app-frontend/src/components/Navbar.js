@@ -1,25 +1,39 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { FaShoppingCart, FaSignOutAlt } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
 
 const Navbar = () => {
-  return (
-    <nav style={styles.navbar}>
-      <Link to="/dashboard" style={styles.logo}>🌾 Farmer's Market</Link>
-      <div style={styles.navLinks}>
-        <Link to="/products" style={styles.link}>Products</Link>
-        <Link to="/cart" style={styles.link}><FaShoppingCart /> Cart</Link>
-        <Link to="/logout" style={styles.link}><FaSignOutAlt /> Logout</Link>
-      </div>
-    </nav>
-  );
-};
+  const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
-const styles = {
-  navbar: { display: "flex", justifyContent: "space-between", padding: "15px", background: "#2E7D32", color: "white" },
-  logo: { fontSize: "22px", textDecoration: "none", color: "white" },
-  navLinks: { display: "flex", gap: "20px" },
-  link: { color: "white", textDecoration: "none", fontSize: "18px" }
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/");
+  };
+
+  return (
+    <AppBar position="static" sx={{ backgroundColor: "#2E7D32" }}>
+      <Toolbar>
+        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          Farmer Market
+        </Typography>
+        {token ? (
+          <>
+            <Button color="inherit" component={Link} to="/dashboard">Dashboard</Button>
+            <Button color="inherit" component={Link} to="/products">Products</Button>
+            <Button color="inherit" component={Link} to="/cart">Cart</Button>
+            <Button color="inherit" component={Link} to="/profile">Profile</Button>
+            <Button color="inherit" onClick={handleLogout}>Logout</Button>
+          </>
+        ) : (
+          <>
+            <Button color="inherit" component={Link} to="/">Login</Button>
+            <Button color="inherit" component={Link} to="/register">Register</Button>
+          </>
+        )}
+      </Toolbar>
+    </AppBar>
+  );
 };
 
 export default Navbar;

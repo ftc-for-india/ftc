@@ -1,32 +1,60 @@
-import React, { useState } from "react";
-import { Button, Card, CardContent, Typography, Container } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import {
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  Grid
+} from "@mui/material";
 
 const CartPage = () => {
-  const [cart, setCart] = useState(JSON.parse(localStorage.getItem("cart")) || []);
+  const [cartItems, setCartItems] = useState([]);
 
-  const removeFromCart = (id) => {
-    const updatedCart = cart.filter(item => item._id !== id);
-    setCart(updatedCart);
+  useEffect(() => {
+    const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
+    setCartItems(storedCart);
+  }, []);
+
+  const removeFromCart = (index) => {
+    const updatedCart = [...cartItems];
+    updatedCart.splice(index, 1);
+    setCartItems(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
+  };
+
+  const getTotal = () => {
+    return cartItems.reduce((total, item) => total + item.price, 0);
   };
 
   return (
     <Container>
-      <Typography variant="h4">Your Cart</Typography>
-      {cart.length === 0 ? (
-        <Typography variant="body1">Your cart is empty.</Typography>
+      <Typography variant="h4" sx={{ mt: 4, mb: 2 }}>Your Cart</Typography>
+      {cartItems.length === 0 ? (
+        <Typography>Your cart is empty.</Typography>
       ) : (
-        cart.map((item) => (
-          <Card key={item._id} style={{ marginBottom: "10px" }}>
-            <CardContent>
-              <Typography variant="h6">{item.name}</Typography>
-              <Typography variant="body1">${item.price}</Typography>
-              <Button variant="contained" color="secondary" onClick={() => removeFromCart(item._id)}>Remove</Button>
-            </CardContent>
-          </Card>
-        ))
+        <>
+          <Grid container spacing={2}>
+            {cartItems.map((item, index) => (
+              <Grid item xs={12} key={index}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6">{item.name}</Typography>
+                    <Typography>₹{item.price}</Typography>
+                    <Button onClick={() => removeFromCart(index)} color="error">
+                      Remove
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+          <Typography variant="h6" sx={{ mt: 3 }}>Total: ₹{getTotal()}</Typography>
+          <Button variant="contained" color="primary" href="/checkout" sx={{ mt: 2 }}>
+            Proceed to Checkout
+          </Button>
+        </>
       )}
-      <Button variant="contained" color="primary" fullWidth href="/checkout">Proceed to Checkout</Button>
     </Container>
   );
 };
