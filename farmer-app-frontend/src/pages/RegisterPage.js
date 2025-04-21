@@ -1,16 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { API_URL } from "../config/api";
 import { useNavigate } from "react-router-dom";
 import {
-  Container,
-  TextField,
-  Typography,
-  Box,
-  Button,
-  Alert,
-  Snackbar
+  TextField, Button, Container, Typography, Box,
+  Alert, Snackbar
 } from "@mui/material";
+import "../styles/login.css";
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
@@ -24,30 +19,47 @@ const RegisterPage = () => {
 
   const handleRegister = async () => {
     try {
-      await axios.post(`${API_URL}/auth/register`, formData);
+      await axios.post(`${process.env.MONGO_URI}/auth/register`, formData);
       setOpenSnackbar(true);
-      setTimeout(() => navigate("/"), 2000);
+      setTimeout(() => navigate("/loginpage"), 2000);
     } catch (err) {
       setError("Registration failed. Please try again.");
     }
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ padding: 4, boxShadow: 3, borderRadius: 2, mt: 5, bgcolor: "white" }}>
-        <Typography variant="h4" gutterBottom textAlign="center">Register</Typography>
-        {error && <Alert severity="error">{error}</Alert>}
-        <TextField name="name" label="Name" fullWidth margin="normal" value={formData.name} onChange={handleChange} />
-        <TextField name="email" label="Email" fullWidth margin="normal" value={formData.email} onChange={handleChange} />
-        <TextField name="password" type="password" label="Password" fullWidth margin="normal" value={formData.password} onChange={handleChange} />
-        <Button fullWidth variant="contained" color="primary" onClick={handleRegister} sx={{ mt: 2 }}>
-          Register
-        </Button>
-      </Box>
-      <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={() => setOpenSnackbar(false)}>
-        <Alert severity="success">Registration successful! Redirecting to login...</Alert>
-      </Snackbar>
-    </Container>
+    <div className="login-background">
+      <Container maxWidth="md">
+        <Box className="login-box" mt={5}>
+          <Box flex={1} className="side-image-box">
+            <img src="/zoe-richardson-c3rmcDjVDbc-unsplash.jpg" alt="Side" className="side-image" />
+          </Box>
+
+          <Box flex={2} className="login-form-box">
+            <Typography variant="h4" className="login-title">Create an Account</Typography>
+            {error && <Alert severity="error">{error}</Alert>}
+
+            <TextField name="name" label="Name" fullWidth margin="normal" value={formData.name} onChange={handleChange} />
+            <TextField name="email" label="Email" fullWidth margin="normal" value={formData.email} onChange={handleChange} />
+            <TextField name="password" type="password" label="Password" fullWidth margin="normal" value={formData.password} onChange={handleChange} />
+
+            <Button fullWidth variant="contained" color="primary" onClick={handleRegister} sx={{ mt: 2 }}>
+              Register
+            </Button>
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              Already have an account?{" "}
+              <Button onClick={() => navigate("/loginpage")} sx={{ textTransform: "none" }}>
+                Login
+              </Button>
+            </Typography>
+          </Box>
+        </Box>
+
+        <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={() => setOpenSnackbar(false)}>
+          <Alert severity="success">Registration successful! Redirecting to login...</Alert>
+        </Snackbar>
+      </Container>
+    </div>
   );
 };
 

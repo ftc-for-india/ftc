@@ -5,7 +5,9 @@ import {
   Card,
   CardContent,
   Button,
-  Grid
+  Grid,
+  CardMedia,
+  Box
 } from "@mui/material";
 
 const CartPage = () => {
@@ -29,7 +31,10 @@ const CartPage = () => {
 
   return (
     <Container>
-      <Typography variant="h4" sx={{ mt: 4, mb: 2 }}>Your Cart</Typography>
+      <Box sx={{ mt: 4, textAlign: 'center' }}>
+        <Typography variant="h4" fontWeight={600} gutterBottom>Your Cart 🛒</Typography>
+        <Typography variant="body1" sx={{ mb: 3 }}>Review your selected items below.</Typography>
+      </Box>
       {cartItems.length === 0 ? (
         <Typography>Your cart is empty.</Typography>
       ) : (
@@ -37,22 +42,28 @@ const CartPage = () => {
           <Grid container spacing={2}>
             {cartItems.map((item, index) => (
               <Grid item xs={12} key={index}>
-                <Card>
-                  <CardContent>
+                <Card sx={{ display: 'flex', alignItems: 'center' }}>
+                  <CardMedia
+                    component="img"
+                    image={item.image || "https://images.unsplash.com/photo-1582515073490-dbe8ec86b6c1?auto=format&fit=crop&w=600&q=80"}
+                    alt={item.name}
+                    sx={{ width: 120, height: 100, objectFit: 'cover' }}
+                  />
+                  <CardContent sx={{ flexGrow: 1 }}>
                     <Typography variant="h6">{item.name}</Typography>
                     <Typography>₹{item.price}</Typography>
-                    <Button onClick={() => removeFromCart(index)} color="error">
-                      Remove
-                    </Button>
+                    <Button onClick={() => removeFromCart(index)} color="error">Remove</Button>
                   </CardContent>
                 </Card>
               </Grid>
             ))}
           </Grid>
-          <Typography variant="h6" sx={{ mt: 3 }}>Total: ₹{getTotal()}</Typography>
-          <Button variant="contained" color="primary" href="/checkout" sx={{ mt: 2 }}>
-            Proceed to Checkout
-          </Button>
+          <Box sx={{ textAlign: 'center', mt: 4 }}>
+            <Typography variant="h6">Total: ₹{getTotal()}</Typography>
+            <Button variant="contained" color="primary" href="/checkout" sx={{ mt: 2 }}>
+              Proceed to Checkout
+            </Button>
+          </Box>
         </>
       )}
     </Container>

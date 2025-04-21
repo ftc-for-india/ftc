@@ -8,7 +8,9 @@ import {
   Box,
   Button,
   Snackbar,
-  Alert
+  Alert,
+  Card,
+  CardMedia
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -36,12 +38,24 @@ const CheckoutPage = () => {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ padding: 4, boxShadow: 3, borderRadius: 2, mt: 5, bgcolor: "white" }}>
-        <Typography variant="h4" gutterBottom>Checkout</Typography>
+    <Container maxWidth="md">
+      <Box sx={{ mt: 5 }}>
+        <Typography variant="h4" textAlign="center" gutterBottom>🧾 Checkout</Typography>
+        <Typography variant="body1" textAlign="center" sx={{ mb: 3 }}>
+          You're one step away from fresh, local produce!
+        </Typography>
+        <Card sx={{ mb: 3 }}>
+          <CardMedia
+            component="img"
+            height="200"
+            image="https://images.unsplash.com/photo-1524592924443-8c5ae80d40c3?auto=format&fit=crop&w=1200&q=80"
+            alt="Checkout Banner"
+          />
+        </Card>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <TextField
           label="Shipping Address"
+          placeholder="e.g. 123 Green Street, City Name, State"
           multiline
           rows={4}
           fullWidth

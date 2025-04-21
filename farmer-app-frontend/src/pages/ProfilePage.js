@@ -1,7 +1,18 @@
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { API_URL } from "../config/api";
-import { Container, Typography, Box, CircularProgress, Button } from "@mui/material";
+import {
+  Container,
+  Typography,
+  Box,
+  CircularProgress,
+  Card,
+  CardContent,
+  Avatar,
+  Grid
+} from "@mui/material";
+import PersonIcon from '@mui/icons-material/Person';
 
 const ProfilePage = () => {
   const [profile, setProfile] = useState(null);
@@ -21,16 +32,26 @@ const ProfilePage = () => {
   return (
     <Container maxWidth="sm">
       <Box sx={{ mt: 5 }}>
-        <Typography variant="h4" gutterBottom>Profile</Typography>
+        <Typography variant="h4" gutterBottom textAlign="center">👤 My Profile</Typography>
         {loading ? (
-          <CircularProgress />
+          <Box sx={{ textAlign: "center" }}><CircularProgress /></Box>
         ) : profile ? (
-          <Box>
-            <Typography variant="body1"><strong>Name:</strong> {profile.name}</Typography>
-            <Typography variant="body1"><strong>Email:</strong> {profile.email}</Typography>
-            <Typography variant="body1"><strong>Role:</strong> {profile.role}</Typography>
-            <Button variant="outlined" sx={{ mt: 2 }}>Edit Profile (Coming Soon)</Button>
-          </Box>
+          <Card sx={{ mt: 3 }}>
+            <CardContent>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item>
+                  <Avatar sx={{ width: 72, height: 72 }}>
+                    <PersonIcon fontSize="large" />
+                  </Avatar>
+                </Grid>
+                <Grid item xs>
+                  <Typography variant="h6">{profile.name}</Typography>
+                  <Typography color="text.secondary">{profile.email}</Typography>
+                  <Typography color="text.secondary">Role: {profile.role}</Typography>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
         ) : (
           <Typography variant="body1">Unable to load profile data.</Typography>
         )}

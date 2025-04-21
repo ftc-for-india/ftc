@@ -9,7 +9,8 @@ import {
   CardContent,
   CardMedia,
   Button,
-  CircularProgress
+  CircularProgress,
+  Box
 } from "@mui/material";
 
 const ProductListingPage = () => {
@@ -29,29 +30,38 @@ const ProductListingPage = () => {
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
     cart.push(product);
     localStorage.setItem("cart", JSON.stringify(cart));
-    alert("Added to cart");
+    alert("✅ Added to cart");
   };
 
   return (
     <Container>
-      <Typography variant="h4" sx={{ mt: 4, mb: 2 }}>Available Products</Typography>
+      <Box sx={{ textAlign: 'center', mt: 4 }}>
+        <Typography variant="h4" fontWeight={600} gutterBottom>
+          🥦 Available Farm Fresh Products 🥕
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 4 }}>
+          Browse and shop directly from trusted local farmers.
+        </Typography>
+      </Box>
       {loading ? (
-        <CircularProgress />
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress />
+        </Box>
       ) : (
         <Grid container spacing={3}>
           {products.map((product) => (
             <Grid item xs={12} sm={6} md={4} key={product._id}>
-              <Card>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardMedia
                   component="img"
-                  height="160"
-                  image={product.image || "https://via.placeholder.com/300x160"}
+                  height="180"
+                  image={product.image || "https://images.unsplash.com/photo-1582515073490-dbe8ec86b6c1?auto=format&fit=crop&w=600&q=80"}
                   alt={product.name}
                 />
-                <CardContent>
+                <CardContent sx={{ flexGrow: 1 }}>
                   <Typography variant="h6">{product.name}</Typography>
-                  <Typography variant="body2">Price: ₹{product.price}</Typography>
-                  <Button variant="contained" onClick={() => addToCart(product)} sx={{ mt: 1 }}>Add to Cart</Button>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Price: ₹{product.price}</Typography>
+                  <Button variant="contained" size="small" onClick={() => addToCart(product)}>Add to Cart</Button>
                 </CardContent>
               </Card>
             </Grid>

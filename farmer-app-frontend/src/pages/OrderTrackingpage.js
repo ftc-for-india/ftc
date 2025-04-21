@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Container, Typography, CircularProgress, Box } from "@mui/material";
+import { Container, Typography, CircularProgress, Box, Card, CardContent } from "@mui/material";
 import axios from "axios";
 import { API_URL } from "../config/api";
 
@@ -23,12 +23,18 @@ const OrderTrackingPage = () => {
 
   return (
     <Container maxWidth="sm">
-      <Box sx={{ mt: 5, textAlign: "center" }}>
-        <Typography variant="h4" gutterBottom>Order Tracking</Typography>
+      <Box sx={{ mt: 6, textAlign: "center" }}>
+        <Typography variant="h4" fontWeight={600} gutterBottom>🚚 Order Tracking</Typography>
+        <Typography variant="body1" sx={{ mb: 3 }}>Track your latest order in real time.</Typography>
         {loading ? (
           <CircularProgress />
         ) : (
-          <Typography variant="h6">Current Order Status: {orderStatus}</Typography>
+          <Card>
+            <CardContent>
+              <Typography variant="h6">Current Order Status:</Typography>
+              <Typography variant="body1" sx={{ mt: 1, fontWeight: 500 }}>{orderStatus}</Typography>
+            </CardContent>
+          </Card>
         )}
       </Box>
     </Container>
