@@ -8,7 +8,14 @@
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["farm", "market", "api", "node", "express", "mongodb"],
+  "keywords": [
+    "farm",
+    "market",
+    "api",
+    "node",
+    "express",
+    "mongodb"
+  ],
   "author": "Your Name",
   "license": "ISC",
   "dependencies": {
@@ -20,19 +27,20 @@
     "@stripe/stripe-js": "^6.1.0",
     "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "cookie-parser": "^1.4.6",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.5.0",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.13.0",
+    "mongoose": "^8.13.2",
+    "morgan": "^1.10.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.5.0",
     "socket.io-client": "^4.8.1",
     "stripe": "^17.7.0",
-    "morgan": "^1.10.0"
+    "validator": "^13.15.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.1.9"
   }
 }

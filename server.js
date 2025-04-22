@@ -6,8 +6,6 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/authRoutes');
-const productRoutes = require('./routes/productRoutes');
-const orderRoutes = require('./routes/orderRoutes');
 
 dotenv.config(); // Load environment variables
 
@@ -15,7 +13,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://ftcmarket.free.nf'],
+  origin: ['http://localhost:3000', 'https://ftc-2.onrender.com'],
   credentials: true
 }));
 app.use(express.json());
@@ -27,8 +25,6 @@ connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
 
 // Root
 app.get('/', (req, res) => {
