@@ -18,28 +18,74 @@ router.post('/register', async (req, res) => {
       city,
       state,
       userType,
-      farmDetails
+      farmDetails,
+      pincode
     } = req.body;
 
-    // Validate required fields
-    if (!name || !email || !password || !phone || !address || !city || !state || !userType) {
-      return res.status(400).json({ message: 'All fields are required' });
+    // Enhanced validation for required fields
+    const requiredFields = ['name', 'email', 'password', 'phone', 'address', 'city', 'state', 'userType', 'pincode'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        message: 'Missing required fields', 
+        fields: missingFields 
+      });
     }
 
-    // Check userType is valid
+    // Enhanced userType validation
     if (!['farmer', 'consumer'].includes(userType)) {
-      return res.status(400).json({ message: 'Invalid user type' });
+      return res.status(400).json({ 
+        message: 'Invalid user type',
+        allowedTypes: ['farmer', 'consumer']
+      });
+    }
+
+    // Validate farmer-specific details
+    if (userType === 'farmer' && (!farmDetails || !farmDetails.farmName)) {
+      return res.status(400).json({ 
+        message: 'Farm details are required for farmer registration',
+        required: ['farmName']
+      });
+    }
+
+    // Enhanced email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
     }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'Email already registered' });
+      return res.status(409).json({ 
+        message: 'Email already registered',
+        suggestion: 'Please try logging in or use a different email'
+      });
+    }
+
+    // Enhanced password validation
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        message: 'Password too short',
+        requirement: 'Password must be at least 6 characters long'
+      });
+    }
+
+    // Validate pincode
+    const pincodeRegex = /^\d{6}$/;
+    if (!pincodeRegex.test(pincode)) {
+      return res.status(400).json({ 
+        message: 'Invalid pincode format',
+        requirement: 'Pincode must be 6 digits'
+      });
     }
 
     // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Create new user
     const newUser = new User({
       name,
       email,
@@ -48,78 +94,59 @@ router.post('/register', async (req, res) => {
       address,
       city,
       state,
+      pincode,
       userType,
-      farmDetails: userType === 'farmer' ? farmDetails : {} // Empty object for non-farmers
+      farmDetails: userType === 'farmer' ? farmDetails : undefined,
+      isVerified: false,
+      status: 'active',
+      lastLogin: new Date()
     });
 
+    // Validate user data
+    const validationError = newUser.validateSync();
+    if (validationError) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: Object.values(validationError.errors).map(err => err.message)
+      });
+    }
+
+    // Save user to database
     await newUser.save();
 
-    // Create JWT token
+    // Generate JWT token
     const token = jwt.sign(
-      { id: newUser._id, role: newUser.userType },
+      { 
+        id: newUser._id, 
+        role: newUser.userType,
+        email: newUser.email
+      },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
+    // Send success response
     res.status(201).json({
-      message: 'User registered successfully',
+      message: `${userType.charAt(0).toUpperCase() + userType.slice(1)} registered successfully`,
       user: {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        role: newUser.userType
+        role: newUser.userType,
+        userType: newUser.userType,
+        isVerified: newUser.isVerified,
+        registrationDate: newUser.createdAt
       },
       token
     });
   } catch (error) {
-    console.error('Register error:', error.message);
-    res.status(500).json({ message: 'Registration failed. Please try again.' });
-  }
-});
-
-// ========== LOGIN ==========
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Validate inputs
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-
-    // Find user
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: 'User not found' });
-    }
-
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    // Create JWT token
-    const token = jwt.sign(
-      { id: user._id, role: user.userType },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    res.status(200).json({
-      message: 'Login successful',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.userType
-      },
-      token
+    console.error('Register error:', error);
+    res.status(500).json({ 
+      message: 'Registration failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
-  } catch (error) {
-    console.error('Login error:', error.message);
-    res.status(500).json({ message: 'Login failed. Please try again.' });
   }
 });
 
-module.exports = router;
+module.exports =router;
+// ... existing code ...m

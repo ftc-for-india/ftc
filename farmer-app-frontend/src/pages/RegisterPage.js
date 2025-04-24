@@ -130,28 +130,58 @@ const RegisterPage = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
   
-  const handleRegister = async () => {
-    if (!validateStep(activeStep)) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const res = await axios.post(`${apiUrl}/api/auth/register`, userData);
-      
-      if (res.data) {
-        setOpenSnackbar(true);
-        setTimeout(() => navigate("/loginpage"), 2000);
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || "Registration failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+ // ... existing code ...
+
+// ... existing code ...
+
+const handleRegister = async () => {
+  if (!validateStep(activeStep)) return;
   
-  const handleSocialLogin = (provider) => {
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    
+    // Prepare registration data according to backend schema
+    const registrationData = {
+      name: `${userData.firstName} ${userData.lastName}`.trim(),
+      email: userData.email,
+      password: userData.password,
+      phone: userData.phone,
+      address: userData.address,
+      city: userData.city,
+      state: userData.state,
+      pincode: userData.pincode,
+      userType: userData.userType,
+      farmDetails: userData.userType === 'farmer' ? {
+        farmName: userData.farmName || `${userData.firstName}'s Farm`,
+        farmLocation: userData.address
+      } : undefined
+    };
+
+    const res = await axios.post(`${apiUrl}/api/auth/register`, registrationData);
+    
+    if (res.data) {
+      setOpenSnackbar(true);
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
+      setTimeout(() => navigate("/dashboard"), 2000);
+    }
+  } catch (err) {
+    console.error('Registration error:', err.response || err);
+    setError(
+      err.response?.data?.message || 
+      "Registration failed. Please check your connection and try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+// ... existing code ...
+  
+  const handleSocialLogin = (provider) => { 
+    navigate("/dashboard");
     window.location.href = `${process.env.REACT_APP_API_URL}/auth/${provider}`;
   };
   

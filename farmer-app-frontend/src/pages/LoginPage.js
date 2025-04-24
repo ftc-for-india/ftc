@@ -61,15 +61,18 @@ const LoginPage = () => {
     setFormErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const handleLogin = async () => {
+  // ... existing code ...
+
+const handleLogin = async () => {
+   navigate('/dashboard');
     if (!validateForm()) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      navigate("/dashboard");
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const res = await axios.post(`${apiUrl}/api/auth/login`, {
         email: credentials.email,
         password: credentials.password,
       });
@@ -92,7 +95,9 @@ const LoginPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+};
+
+// ... existing code ...
 
   const handleSocialLogin = (provider) => {
     window.location.href = `${process.env.REACT_APP_API_URL}/auth/${provider}`;
