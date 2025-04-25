@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useCallback } from 'react';
 import {
-  Container, Grid, Paper, Typography, Box, Button, Divider,
-  List, ListItem, ListItemIcon, ListItemText, Card, CardContent,
+  Container, Grid, Paper, Typography, Box, Button,
+  Card, CardContent,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Tabs, Tab, CircularProgress, Alert, Dialog, DialogTitle,
   DialogContent, DialogContentText, DialogActions, TextField,
@@ -9,8 +9,8 @@ import {
 } from '@mui/material';
 import {
   Dashboard, People, Inventory, ShoppingCart, AttachMoney,
-  TrendingUp, Person, Delete, Edit, Add, Search, Refresh,
-  CheckCircle, Cancel, MoreVert, Visibility, Block, LocalShipping
+  TrendingUp, Delete, Edit, Add, Search, Refresh,
+  CheckCircle, Cancel, Visibility, Block, LocalShipping
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -56,7 +56,70 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, []);
   
-  const fetchDashboardData = async () => {
+  const fetchUsers = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      
+      const response = await axios.get(
+        `${apiUrl}/api/admin/users`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      
+      setUsers(response.data);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      showNotification('Failed to load users', 'error');
+    }
+  }, [showNotification]);
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      
+      const response = await axios.get(
+        `${apiUrl}/api/admin/products`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      
+      setProducts(response.data);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      showNotification('Failed to load products', 'error');
+    }
+  }, [showNotification]);
+
+  const fetchOrders = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      
+      const response = await axios.get(
+        `${apiUrl}/api/admin/orders`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      
+      setOrders(response.data);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      showNotification('Failed to load orders', 'error');
+    }
+  }, [showNotification]);
+
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -76,17 +139,17 @@ const AdminDashboard = () => {
       
       // Fetch users based on active tab
       if (activeTab === 1) {
-        fetchUsers();
+        await fetchUsers();
       }
       
       // Fetch products based on active tab
       if (activeTab === 2) {
-        fetchProducts();
+        await fetchProducts();
       }
       
       // Fetch orders based on active tab
       if (activeTab === 3) {
-        fetchOrders();
+        await fetchOrders();
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -94,70 +157,12 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
-  
-  const fetchUsers = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      
-      const response = await axios.get(
-        `${apiUrl}/api/admin/users`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-      
-      setUsers(response.data);
-    } catch (err) {
-      console.error('Error fetching users:', err);
-      showNotification('Failed to load users', 'error');
-    }
-  };
-  
-  const fetchProducts = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      
-      const response = await axios.get(
-        `${apiUrl}/api/admin/products`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-      
-      setProducts(response.data);
-    } catch (err) {
-      console.error('Error fetching products:', err);
-      showNotification('Failed to load products', 'error');
-    }
-  };
-  
-  const fetchOrders = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      
-      const response = await axios.get(
-        `${apiUrl}/api/admin/orders`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-      
-      setOrders(response.data);
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-      showNotification('Failed to load orders', 'error');
-    }
-  };
+  }, [activeTab, showNotification, fetchUsers, fetchProducts, fetchOrders]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
   
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);

@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { 
   TrendingUp, LocalShipping, ShoppingCart, 
-  Notifications, LocationOn, CalendarToday 
+  LocationOn, CalendarToday 
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';

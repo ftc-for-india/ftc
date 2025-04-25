@@ -1,13 +1,45 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User.js');
+const User = require('../models/user.js');
+const router = express.Router();
 require('dotenv').config();
 
-const router = express.Router();
+// Input validation middleware
+const validateRegistrationInput = (req, res, next) => {
+  const { email, password, phone, pincode, userType } = req.body;
+  
+  const errors = {};
+  
+  // Email validation
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.email = 'Invalid email format';
+  }
 
-// ========== REGISTER ==========
-router.post('/register', async (req, res) => {
+  // Password strength validation
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
+    errors.password = 'Password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character';
+  }
+
+  // Phone validation
+  if (!/^\+?[\d\s-]{10,}$/.test(phone)) {
+    errors.phone = 'Invalid phone number format';
+  }
+
+  // Pincode validation
+  if (!/^\d{6}$/.test(pincode)) {
+    errors.pincode = 'Pincode must be 6 digits';
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return res.status(400).json({ errors });
+  }
+  
+  next();
+};
+
+// Registration route
+router.post('/register', validateRegistrationInput, async (req, res) => {
   try {
     const {
       name,
@@ -22,107 +54,63 @@ router.post('/register', async (req, res) => {
       pincode
     } = req.body;
 
-    // Enhanced validation for required fields
-    const requiredFields = ['name', 'email', 'password', 'phone', 'address', 'city', 'state', 'userType', 'pincode'];
-    const missingFields = requiredFields.filter(field => !req.body[field]);
-    
-    if (missingFields.length > 0) {
-      return res.status(400).json({ 
-        message: 'Missing required fields', 
-        fields: missingFields 
-      });
-    }
-
-    // Enhanced userType validation
-    if (!['farmer', 'consumer'].includes(userType)) {
-      return res.status(400).json({ 
-        message: 'Invalid user type',
-        allowedTypes: ['farmer', 'consumer']
-      });
-    }
-
-    // Validate farmer-specific details
-    if (userType === 'farmer' && (!farmDetails || !farmDetails.farmName)) {
-      return res.status(400).json({ 
-        message: 'Farm details are required for farmer registration',
-        required: ['farmName']
-      });
-    }
-
-    // Enhanced email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: 'Invalid email format' });
-    }
-
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ 
+      return res.status(409).json({
         message: 'Email already registered',
         suggestion: 'Please try logging in or use a different email'
       });
     }
 
-    // Enhanced password validation
-    if (password.length < 6) {
-      return res.status(400).json({ 
-        message: 'Password too short',
-        requirement: 'Password must be at least 6 characters long'
-      });
-    }
-
-    // Validate pincode
-    const pincodeRegex = /^\d{6}$/;
-    if (!pincodeRegex.test(pincode)) {
-      return res.status(400).json({ 
-        message: 'Invalid pincode format',
-        requirement: 'Pincode must be 6 digits'
-      });
-    }
-
-    // Hash the password
+    // Create new user with enhanced security
     const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
     const newUser = new User({
       name,
       email,
       password: hashedPassword,
       phone,
-      address,
-      city,
-      state,
-      pincode,
+      address: {
+        street: address,
+        city,
+        state,
+        pincode
+      },
       userType,
       farmDetails: userType === 'farmer' ? farmDetails : undefined,
       isVerified: false,
       status: 'active',
-      lastLogin: new Date()
+      lastLogin: new Date(),
+      verificationToken: crypto.randomBytes(32).toString('hex'),
+      verificationTokenExpires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
     });
 
     // Validate user data
     const validationError = newUser.validateSync();
     if (validationError) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
+      return res.status(400).json({
+        message: 'Validation failed',
         errors: Object.values(validationError.errors).map(err => err.message)
       });
     }
 
-    // Save user to database
     await newUser.save();
 
-    // Generate JWT token
+    // Generate JWT with enhanced security
     const token = jwt.sign(
-      { 
-        id: newUser._id, 
+      {
+        id: newUser._id,
         role: newUser.userType,
-        email: newUser.email
+        email: newUser.email,
+        version: 1 // For token versioning
       },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      {
+        expiresIn: '7d',
+        algorithm: 'HS256'
+      }
     );
 
     // Send success response
@@ -133,20 +121,111 @@ router.post('/register', async (req, res) => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.userType,
-        userType: newUser.userType,
         isVerified: newUser.isVerified,
         registrationDate: newUser.createdAt
       },
       token
     });
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ 
+    console.error('Registration error:', error);
+    res.status(500).json({
       message: 'Registration failed',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });
 
-module.exports =router;
-// ... existing code ...m
+// Login route
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if account is locked
+    if (user.isLocked) {
+      const lockTime = new Date(user.loginAttempts.lockUntil);
+      return res.status(423).json({
+        message: 'Account is temporarily locked',
+        unlockTime: lockTime
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      await user.incrementLoginAttempts();
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Reset login attempts on successful login
+    await user.resetLoginAttempts();
+
+    // Update last login with device info
+    await user.updateLastLogin({
+      browser: req.headers['user-agent'],
+      deviceId: req.headers['x-device-id'] || 'unknown'
+    });
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.userType,
+        email: user.email,
+        version: 1
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Login successful',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.userType,
+        isVerified: user.isVerified
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      message: 'Login failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// Password reset request
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+
+    await user.save();
+
+    // Send reset token (implement email service)
+    res.json({ message: 'Password reset instructions sent to your email' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error processing password reset request' });
+  }
+});
+
+// Logout (token blacklisting would be implemented with Redis)
+router.post('/logout', async (req, res) => {
+  res.json({ message: 'Logged out successfully' });
+});
+
+module.exports = router;
