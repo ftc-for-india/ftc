@@ -4,7 +4,7 @@ require('dotenv').config();
 const connectDB = async () => {
   try {
     // Set MongoDB URI with fallback
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/farmer';
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/farmers';
 
     // Enhanced connection options for MongoDB Atlas
     const options = {
@@ -18,19 +18,27 @@ const connectDB = async () => {
       w: 'majority'
     };
 
+    // Initialize connection
     const conn = await mongoose.connect(mongoURI, options);
 
-    // Add connection event handlers
+    // Connection event handlers
     mongoose.connection.on('connected', () => {
-      console.log('✅ MongoDB Atlas connected successfully!');
+      console.log('✅ MongoDB connected successfully!');
     });
 
     mongoose.connection.on('error', (err) => {
       console.error('❌ MongoDB connection error:', err);
+      // Attempt to reconnect on error
+      setTimeout(() => {
+        mongoose.connect(mongoURI, options);
+      }, 5000);
     });
 
     mongoose.connection.on('disconnected', () => {
       console.log('⚠️ MongoDB disconnected. Attempting to reconnect...');
+      setTimeout(() => {
+        mongoose.connect(mongoURI, options);
+      }, 5000);
     });
 
     // Handle application termination
@@ -45,16 +53,31 @@ const connectDB = async () => {
       }
     });
 
+    // Handle uncaught exceptions
+    process.on('uncaughtException', async (err) => {
+      console.error('Uncaught Exception:', err);
+      try {
+        await mongoose.connection.close();
+        console.log('MongoDB connection closed due to uncaught exception');
+        process.exit(1);
+      } catch (closeErr) {
+        console.error('Error closing MongoDB connection:', closeErr);
+        process.exit(1);
+      }
+    });
+
     console.log(`✅ MongoDB Connected to: ${conn.connection.host}`);
     return conn;
   } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
     
-    // More detailed error information
+    // Enhanced error handling with specific error types
     if (err.name === 'MongoServerSelectionError') {
-      console.error("Could not connect to MongoDB Atlas. Please check your network connection and credentials.");
+      console.error("Could not connect to MongoDB. Please check your network connection and MongoDB server status.");
     } else if (err.name === 'MongoParseError') {
       console.error("Invalid MongoDB connection string. Please check your MONGODB_URI format.");
+    } else if (err.name === 'MongoNetworkError') {
+      console.error("Network error occurred. Please check your internet connection and MongoDB server accessibility.");
     }
     
     process.exit(1);

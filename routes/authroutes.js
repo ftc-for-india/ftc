@@ -1,6 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const passport = require('passport');
 const User = require('../models/user.js');
 const router = express.Router();
 require('dotenv').config();
@@ -227,5 +229,45 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/logout', async (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
+
+// Google OAuth routes
+router.get('/google', 
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  (req, res) => {
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: req.user._id, email: req.user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    
+    // Redirect to frontend with token
+    res.redirect(`${process.env.FRONTEND_URL}/oauth-callback?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
+  }
+);
+
+// Facebook OAuth routes
+router.get('/facebook',
+  passport.authenticate('facebook', { scope: ['email'] })
+);
+
+router.get('/facebook/callback',
+  passport.authenticate('facebook', { failureRedirect: '/login' }),
+  (req, res) => {
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: req.user._id, email: req.user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    
+    // Redirect to frontend with token
+    res.redirect(`${process.env.FRONTEND_URL}/oauth-callback?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
+  }
+);
 
 module.exports = router;

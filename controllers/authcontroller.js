@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
+const User = require('./models/user');
 const crypto = require('crypto');
 
 // Enhanced token generation with more security features

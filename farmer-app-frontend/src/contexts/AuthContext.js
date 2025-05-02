@@ -19,23 +19,38 @@ export const AuthProvider = ({ children }) => {
     if (token && user) {
       setCurrentUser(user);
       setIsAuthenticated(true);
+      
+      // Set authorization header for all future requests
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
     setLoading(false);
   }, []);
 
   const login = async (credentials) => {
-    const response = await axios.post('/api/auth/login', credentials);
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const response = await axios.post(`${apiUrl}/api/auth/login`, credentials);
     const { token, user } = response.data;
+    
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
+    
+    // Set authorization header
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
     setCurrentUser(user);
     setIsAuthenticated(true);
     return response.data;
   };
 
+  const socialLogin = (provider) => {
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    window.location.href = `${apiUrl}/auth/${provider}`;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    delete axios.defaults.headers.common['Authorization'];
     setCurrentUser(null);
     setIsAuthenticated(false);
   };
@@ -44,6 +59,7 @@ export const AuthProvider = ({ children }) => {
     currentUser,
     isAuthenticated,
     login,
+    socialLogin,
     logout,
     loading
   };

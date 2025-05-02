@@ -1,59 +1,49 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const passport = require('passport');
+const session = require('express-session');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 require('dotenv').config();
+require('./config/passport');
 
 const app = express();
-
 // Enhanced CORS configuration
-// ... existing code ...
 app.use(cors({
   origin: ['http://localhost:3000', 'http://localhost:5173', 'https://ftc-2.onrender.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-// ... existing code ...
 
-// Middleware
+// Body parser middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Morgan logger
 app.use(morgan('dev'));
-app.use(express.json({ limit: '10mb' })); // Increased payload limit
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
+// Session middleware for passport
+app.use(session({
+  secret: process.env.JWT_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === 'production' }
+}));
 
-// Error handling middleware
+// Initialize passport
+app.use(passport.initialize());
+app.use(passport.session());
 const errorHandler = (err, req, res, next) => {
-  console.error('Error:', err.message);
-  console.error('Stack:', err.stack);
-
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      message: 'Validation Error',
-      errors: Object.values(err.errors).map(e => e.message)
-    });
-  }
-
-  if (err.code === 11000) {
-    return res.status(409).json({
-      message: 'Duplicate key error',
-      field: Object.keys(err.keyPattern)[0]
-    });
-  }
-
+  console.error(err.stack);
   res.status(err.status || 500).json({
     message: err.message || 'Internal Server Error',
     error: process.env.NODE_ENV === 'development' ? err : {}
   });
 };
 
-// Connect to MongoDB before starting the server
+// Connect to MongoDB before starting the serverconnectDB()
 connectDB()
   .then(() => {
     // Health check route
@@ -63,6 +53,7 @@ connectDB()
 
     // API routes
     app.use('/api/auth', authRoutes);
+    app.use('/auth', oauthRoutes);
 
     // Welcome route
     app.get('/', (req, res) => {
@@ -77,22 +68,63 @@ connectDB()
     // Global error handler
     app.use(errorHandler);
 
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
-      console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
-    });
+
+    // Global error handler
+    app.use(errorHandler);
+
+    // ... existing code ...
+    // Dynamic port selection with fallback
+    const startServer = async (retries = 3) => {
+      const basePort = process.env.PORT || 5000;
+      
+      for (let i = 0; i < retries; i++) {
+        const port = basePort + i;
+        try {
+          const server = await new Promise((resolve, reject) => {
+            const server = app.listen(port, () => {
+              console.log(`✅ Server running on port ${port}`);
+              console.log(`📚 API Documentation: http://localhost:${port}/api-docs`);
+              resolve(server);
+            }).on('error', (err) => {
+              if (err.code === 'EADDRINUSE') {
+                console.log(`⚠️ Port ${port} is in use, trying next port...`);
+                reject(err);
+              } else {
+                reject(err);
+              }
+            });
+          });
+
+          // Store server instance for graceful shutdown
+          global.server = server;
+          return;
+        } catch (err) {
+          if (i === retries - 1) {
+            console.error(`❌ Could not find an available port after ${retries} attempts`);
+            process.exit(1);
+          }
+        }
+      }
+    };
+
+    startServer();
+
+    // Graceful shutdown handlers
+    const gracefulShutdown = async () => {
+      if (global.server) {
+        console.log('Performing graceful shutdown...');
+        await new Promise((resolve) => {
+          global.server.close(resolve);
+        });
+        console.log('Server closed. Exiting process.');
+      }
+      process.exit(0);
+    };
+
+    process.on('SIGTERM', gracefulShutdown);
+    process.on('SIGINT', gracefulShutdown);
   })
   .catch(error => {
     console.error('❌ Failed to connect to MongoDB:', error);
     process.exit(1);
   });
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM. Performing graceful shutdown...');
-  server.close(() => {
-    console.log('Server closed. Exiting process.');
-    process.exit(0);
-  });
-});
