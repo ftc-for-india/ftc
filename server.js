@@ -53,7 +53,6 @@ connectDB()
 
     // API routes
     app.use('/api/auth', authRoutes);
-    app.use('/auth', oauthRoutes);
 
     // Welcome route
     app.get('/', (req, res) => {
